@@ -12,8 +12,6 @@
 
 from __future__ import annotations
 
-import os
-import re
 from typing import Any, Optional, Protocol
 
 from guardrails.base import (
@@ -31,6 +29,7 @@ from guardrails.tool_call import (
     ToolCall,
 )
 from guardrails.checkers import (
+    FileSystemChecker,
     ShellChecker,
     NetworkChecker,
     SQLChecker,
@@ -41,115 +40,6 @@ from guardrails.checkers import (
 class Checker(Protocol):
     """检查器协议"""
     def check(self, call: ToolCall) -> Optional[GuardResult]: ...
-
-
-# ============ 文件路径检查器 ============
-
-# 危险的路径模式
-DANGEROUS_PATH_PATTERNS: list[tuple[str, str]] = [
-    (r"\.\./", "PATH-001"),              # 目录穿越
-    (r"\.\.\|", "PATH-001"),
-    (r"\.\.\\\\", "PATH-001"),
-    (r"/etc/(passwd|shadow|hosts)", "PATH-002"),  # 敏感系统文件
-    (r"/proc/", "PATH-003"),             # proc 文件系统
-    (r"/sys/", "PATH-004"),              # sys 文件系统
-    (r"/dev/", "PATH-005"),              # dev 文件系统
-    (r"C:\\Windows\\System32", "PATH-006"),  # Windows 系统目录
-    (r"\.(ssh|gnupg|aws|docker)", "PATH-007"),  # 敏感配置目录
-]
-
-# 敏感文件扩展名
-SENSITIVE_EXTENSIONS = {
-    ".pem", ".key", ".p12", ".pfx",  # 证书
-    ".env", ".secret",                # 配置
-    ".shadow", ".passwd",             # 密码
-}
-
-
-class FileSystemChecker:
-    """文件操作安全检查器"""
-
-    def __init__(
-        self,
-        allowed_paths: Optional[list[str]] = None,
-        blocked_paths: Optional[list[str]] = None,
-        allow_sensitive_ext: bool = False,
-    ) -> None:
-        self.allowed_paths = allowed_paths or []
-        self.blocked_paths = blocked_paths or ["/etc", "/proc", "/sys", "/dev"]
-        self.allow_sensitive_ext = allow_sensitive_ext
-        self._compiled_patterns = [
-            (re.compile(p), rule_id) for p, rule_id in DANGEROUS_PATH_PATTERNS
-        ]
-
-    def check(self, call: ToolCall) -> Optional[GuardResult]:
-        """检查文件操作"""
-        # 提取路径参数
-        path_keys = ["path", "file_path", "filepath", "src", "dest", "src_path", "dest_path"]
-        paths: list[tuple[str, str]] = []
-        for key in path_keys:
-            if key in call.tool_args and isinstance(call.tool_args[key], str):
-                paths.append((key, call.tool_args[key]))
-
-        if not paths:
-            return None
-
-        for arg_name, path in paths:
-            result = self._check_path(arg_name, path)
-            if result:
-                return result
-        return None
-
-    def _check_path(self, arg_name: str, path: str) -> Optional[GuardResult]:
-        """检查单个路径"""
-        # 1. 目录穿越检测
-        if ".." in path or "~" in path:
-            normalized = os.path.normpath(path)
-            if ".." in path.split(os.sep):
-                return GuardResult.block_result(
-                    level=GuardLevel.TOOL,
-                    message=f"Directory traversal detected in '{arg_name}': {path}",
-                    rule_id="PATH-001",
-                    details={"arg": arg_name, "path": path},
-                )
-
-        # 2. 已知危险模式检测
-        for pattern, rule_id in self._compiled_patterns:
-            if pattern.search(path):
-                return GuardResult.block_result(
-                    level=GuardLevel.TOOL,
-                    message=f"Dangerous path pattern in '{arg_name}': {path}",
-                    rule_id=rule_id,
-                    details={"arg": arg_name, "path": path, "matched": pattern.pattern},
-                )
-
-        # 3. 敏感扩展名检测
-        if not self.allow_sensitive_ext:
-            ext = os.path.splitext(path)[1].lower()
-            if ext in SENSITIVE_EXTENSIONS:
-                return GuardResult.block_result(
-                    level=GuardLevel.TOOL,
-                    message=f"Access to sensitive file type blocked: {path}",
-                    rule_id="PATH-008",
-                    details={"arg": arg_name, "path": path, "extension": ext},
-                )
-
-        # 4. 路径白名单检查
-        if self.allowed_paths:
-            is_allowed = False
-            for allowed in self.allowed_paths:
-                if path.startswith(allowed):
-                    is_allowed = True
-                    break
-            if not is_allowed:
-                return GuardResult.block_result(
-                    level=GuardLevel.TOOL,
-                    message=f"Path '{path}' not in allowed paths list",
-                    rule_id="PATH-009",
-                    details={"arg": arg_name, "path": path},
-                )
-
-        return None
 
 
 class ToolGuard(BaseGuard):
@@ -166,8 +56,8 @@ class ToolGuard(BaseGuard):
     自定义检查器：
         guard = ToolGuard(checkers=[FileSystemChecker(), ShellChecker()])
 
-    按工具类型自动路由：
-        guard = ToolGuard(auto_route=True)
+    按工具类型自动路由（复用已配置的检查器实例）：
+        guard = ToolGuard(auto_route=True, allowed_paths=["/workspace"])
     """
 
     def __init__(
@@ -199,6 +89,13 @@ class ToolGuard(BaseGuard):
                 MCPDescriptionScanner(strict_mode=mcp_strict_mode),
             ])
 
+        # 预计算工具名集合（用于路由）
+        self._file_names = {t.lower() for t in FILE_TOOLS}
+        self._shell_names = {t.lower() for t in SHELL_TOOLS}
+        self._net_names = {t.lower() for t in NETWORK_TOOLS}
+        self._db_names = {t.lower() for t in DATABASE_TOOLS}
+        self._mcp_names = {t.lower() for t in MCP_TOOLS}
+
     async def check(
         self, data: Any, context: Optional[dict[str, Any]] = None
     ) -> GuardResult:
@@ -214,8 +111,8 @@ class ToolGuard(BaseGuard):
                 message=f"Unsupported type: {type(data).__name__}",
             )
 
-        # 优先用工具类型专用检查器
-        routed = _route_checker(data.tool_name)
+        # 优先用工具类型专用检查器（复用已配置的实例，保留用户配置）
+        routed = self._route_checker(data.tool_name)
         if routed:
             result = routed.check(data)
             if result:
@@ -233,27 +130,32 @@ class ToolGuard(BaseGuard):
         """添加自定义检查器"""
         self._checkers.append(checker)
 
+    def _route_checker(self, tool_name: str) -> Optional[Checker]:
+        """根据工具名从已配置的检查器中匹配专用检查器
 
-def _route_checker(tool_name: str) -> Optional[Checker]:
-    """根据工具名返回专用检查器"""
-    name = tool_name.lower()
-    file_names = {t.lower() for t in FILE_TOOLS}
-    shell_names = {t.lower() for t in SHELL_TOOLS}
-    net_names = {t.lower() for t in NETWORK_TOOLS}
-    db_names = {t.lower() for t in DATABASE_TOOLS}
-    mcp_names = {t.lower() for t in MCP_TOOLS}
+        复用 self._checkers 中已有配置的实例，避免丢失用户的自定义参数
+        （如 allowed_paths、allow_private_networks 等）。
+        """
+        name = tool_name.lower()
 
-    if name in file_names:
-        return FileSystemChecker()
-    if name in shell_names:
-        return ShellChecker()
-    if name in net_names:
-        return NetworkChecker()
-    if name in db_names:
-        return SQLChecker()
-    if name in mcp_names:
-        return MCPDescriptionScanner()
-    return None
+        type_map: dict[str, type] = {}
+        if name in self._file_names:
+            type_map = {FileSystemChecker: True}
+        elif name in self._shell_names:
+            type_map = {ShellChecker: True}
+        elif name in self._net_names:
+            type_map = {NetworkChecker: True}
+        elif name in self._db_names:
+            type_map = {SQLChecker: True}
+        elif name in self._mcp_names:
+            type_map = {MCPDescriptionScanner: True}
+        else:
+            return None
+
+        for checker in self._checkers:
+            if type(checker) in type_map:
+                return checker
+        return None
 
 
 def check_tool(

@@ -4,8 +4,8 @@ import pytest
 
 from guardrails.base import GuardSeverity
 from guardrails.tool_call import ToolCall
-from guardrails.tool_guard import ToolGuard, FileSystemChecker, check_tool
-from guardrails.checkers import ShellChecker, NetworkChecker, SQLChecker, MCPDescriptionScanner
+from guardrails.checkers import FileSystemChecker, ShellChecker, NetworkChecker, SQLChecker, MCPDescriptionScanner
+from guardrails.tool_guard import ToolGuard, check_tool
 
 
 @pytest.fixture
@@ -279,4 +279,33 @@ class TestToolGuardIntegration:
             tool_name="http_request",
             tool_args={"url": "http://localhost:8080/secret"},
         )
+        assert result.severity == GuardSeverity.BLOCK
+
+    @pytest.mark.asyncio
+    async def test_route_checker_reuses_config(self) -> None:
+        """验证 _route_checker 复用已配置的检查器实例（修复旧版无参创建 bug）
+
+        如果 _route_checker 创建了新的无参 FileSystemChecker 实例，
+        则 allowed_paths=["/workspace"] 不会生效，/workspace 下的路径
+        也会因为白名单不匹配被误拦。"""
+        guard = ToolGuard(allowed_paths=["/workspace"])
+        # 白名单内的路径应该放行
+        call = ToolCall(
+            tool_name="read_file",
+            tool_args={"path": "/workspace/data.txt"},
+        )
+        result = await guard.check(call)
+        assert result.severity == GuardSeverity.PASS, (
+            f"白名单内路径应放行，但被 {result.rule_id} 拦截: {result.message}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_route_checker_blocks_outside_whitelist(self) -> None:
+        """验证白名单外的路径被阻断"""
+        guard = ToolGuard(allowed_paths=["/workspace"])
+        call = ToolCall(
+            tool_name="read_file",
+            tool_args={"path": "/etc/passwd"},
+        )
+        result = await guard.check(call)
         assert result.severity == GuardSeverity.BLOCK

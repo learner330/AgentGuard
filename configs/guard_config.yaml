@@ -1,0 +1,117 @@
+# ============================================================
+# AgentGuard 围栏配置
+# ============================================================
+
+# 全局开关
+global:
+  enabled: true
+  log_level: info  # debug / info / warn / error
+
+# 第一层：输入围栏
+input_guard:
+  enabled: true
+  # 规则引擎开关
+  rules:
+    instruction_override: true  # 指令覆盖检测
+    role_hijack: true           # 角色劫持检测
+    jailbreak: true             # 越狱模板检测
+    encoding_bypass: true       # 编码绕过检测
+  # 自定义规则（追加到内置规则之后）
+  custom_patterns: []
+    # - ["your_regex", "CUSTOM-001"]
+  # 后续版本：ML 分类器和 LLM Judge 配置
+  ml_classifier:
+    enabled: false
+    model: "deberta-v3-base"
+    threshold: 0.75
+    model_path: "models/input_guard_classifier"
+  llm_judge:
+    enabled: false
+    model: "gpt-4o-mini"
+    prompt_file: "configs/prompts/input_guard_judge.txt"
+
+# 第二层：思维围栏
+thought_guard:
+  enabled: true
+  # 循环攻击检测参数
+  max_tool_calls_per_loop: 10
+  loop_detection_window: 3
+  # 风险检测规则
+  rules:
+    privilege_escalation: true  # 越权访问
+    data_exfiltration: true     # 数据外泄
+    dangerous_action: true      # 危险操作
+    unauthorized_action: true   # 越权判定
+  # 用户自定义风险模式
+  custom_patterns: []
+    # - [regex, rule_id, risk_level]  # risk_level: low / medium / high
+
+# 第三层：工具围栏
+tool_guard:
+  enabled: true
+  auto_route: true  # 按工具名自动路由到专用检查器
+
+  # 文件操作
+  file_system:
+    allowed_paths:
+      - "/workspace"
+      - "/data"
+    blocked_paths:
+      - "/etc"
+      - "/proc"
+      - "/sys"
+      - "/dev"
+    allow_sensitive_extensions: false
+
+  # Shell 命令
+  shell:
+    extra_blocked_commands: []
+    # - "some_command"
+
+  # 网络请求（SSRF 防护）
+  network:
+    allow_private_networks: false
+    allowed_domains: []
+      # - "api.example.com"
+    blocked_domains: []
+
+  # 数据库
+  sql:
+    allow_write: false            # 默认禁止写操作
+    allow_multi_statement: false  # 默认禁止多语句
+
+  # MCP 工具投毒扫描
+  mcp:
+    strict_mode: false
+    max_description_length: 2000
+    max_urls_in_description: 2
+    extra_sensitive_patterns: []
+
+# 第四层：输出围栏
+output_guard:
+  enabled: true
+  mask_output: true  # 自动脱敏敏感信息
+  # 敏感信息检测
+  detection:
+    phone: true          # 手机号
+    id_card: true        # 身份证
+    bank_card: true      # 银行卡
+    email: true          # 邮箱
+    api_key: true        # API Key / Token
+    jwt: true            # JWT
+    password: true       # 密码
+    system_prompt_leak: true
+  # System Prompt 配置（用于检测泄露）
+  system_prompt: null  # 填写你的系统提示词以启用泄露检测
+
+# 框架集成
+integrations:
+  langgraph:
+    # LangGraph 嵌入点配置
+    intercept_nodes:
+      - "agent"      # 在 agent 节点前后插入围栏
+      - "tools"      # 在 tools 节点前检查工具调用
+    input_guard_node: "input_guard"      # 输入围栏的 virtual node 名称
+    thought_guard_node: "thought_guard"
+    tool_guard_node: "tool_guard"
+    output_guard_node: "output_guard"
