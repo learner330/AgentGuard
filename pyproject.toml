@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agent-guard"
-version = "0.1.0"
+version = "0.5.0"
 description = "轻量级、可插拔的 LLM Agent 安全围栏中间件"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
@@ -32,6 +32,21 @@ langgraph = "^0.2.0"
 structlog = "^24.0"
 click = "^8.1"
 
+# SQL 解析（AST 注入检测）
+sqlparse = "^0.5"
+
+# 可选：语义检测（Embedding 相似度）
+sentence-transformers = {version = "^3.0", optional = true}
+scikit-learn = {version = "^1.5", optional = true}
+
+# MCP 攻击复现
+mcp = "^1.0"
+fastmcp = "^0.2"
+openai = "^1.0"
+
+[tool.poetry.extras]
+semantic = ["sentence-transformers", "scikit-learn"]
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
 pytest-cov = "^5.0"
@@ -41,6 +56,11 @@ mypy = "^1.10"
 
 [tool.poetry.group.benchmarks.dependencies]
 datasets = "^2.0"
+
+[tool.poetry.group.attacks.dependencies]
+mcp = "^1.0"
+fastmcp = "^0.2"
+openai = "^1.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -92,5 +112,11 @@ module = [
     "langchain.*",
     "langchain_core.*",
     "langgraph.*",
+    "mcp.*",
+    "fastmcp.*",
+    "openai.*",
+    "sqlparse.*",
+    "sentence_transformers.*",
+    "sklearn.*",
 ]
 ignore_missing_imports = true

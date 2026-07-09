@@ -1,6 +1,6 @@
 """LangGraph 集成适配器
 
-将 AgentGuard 四层围栏嵌入到 LangGraph 工作流中。
+将 AgentGuard 三层围栏嵌入到 LangGraph 工作流中。
 
 使用方式：
     from guardrails.integrations.langgraph_adapter import AgentGuardMiddleware
@@ -14,12 +14,10 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional
 
-from guardrails.base import GuardLevel, GuardResult, GuardSeverity
+from guardrails.base import GuardResult, GuardSeverity
 from guardrails.input_guard import InputGuard
-from guardrails.thought_guard import ThoughtGuard
 from guardrails.tool_guard import ToolGuard
 from guardrails.output_guard import OutputGuard
-from guardrails.thought import ThoughtContext
 from guardrails.tool_call import ToolCall
 
 
@@ -34,36 +32,30 @@ class GuardBlockedError(Exception):
 class AgentGuardMiddleware:
     """LangGraph 围栏中间件
 
-    将四层围栏注入 LangGraph StateGraph 的节点间。
+    将三层围栏注入 LangGraph StateGraph 的节点间。
 
     嵌入点：
     - before_agent: 在 agent 节点执行前，校验用户输入
-    - after_thought: 在 agent 生成 Thought 后、Action 执行前
     - before_tool: 在工具调用前，审查参数
     - before_output: 在返回用户前，过滤输出
 
     使用示例：
         from langgraph.graph import StateGraph
-        from guardrails import InputGuard, ThoughtGuard, ToolGuard, OutputGuard
+        from guardrails import InputGuard, ToolGuard, OutputGuard
 
         middleware = AgentGuardMiddleware(
             input_guard=InputGuard(),
-            thought_guard=ThoughtGuard(),
             tool_guard=ToolGuard(allowed_paths=["/workspace"]),
             output_guard=OutputGuard(mask_output=True),
         )
 
-        # 方式 1：手动在节点中调用
+        # 手动在节点中调用
         state["messages"] = await middleware.before_agent(state["messages"][-1])
-
-        # 方式 2：自动包装 workflow（实验性）
-        workflow = middleware.wrap(workflow)
     """
 
     def __init__(
         self,
         input_guard: InputGuard | None = None,
-        thought_guard: ThoughtGuard | None = None,
         tool_guard: ToolGuard | None = None,
         output_guard: OutputGuard | None = None,
         strict_mode: bool = False,
@@ -72,14 +64,12 @@ class AgentGuardMiddleware:
         """
         Args:
             input_guard: 输入围栏实例
-            thought_guard: 思维围栏实例
             tool_guard: 工具围栏实例
             output_guard: 输出围栏实例
             strict_mode: 严格模式——WARN 也阻断（默认仅 BLOCK 阻断）
             on_block: 阻断时的回调函数（用于自定义日志/告警）
         """
         self.input_guard = input_guard or InputGuard()
-        self.thought_guard = thought_guard or ThoughtGuard()
         self.tool_guard = tool_guard or ToolGuard()
         self.output_guard = output_guard or OutputGuard()
         self.strict_mode = strict_mode
@@ -95,30 +85,6 @@ class AgentGuardMiddleware:
         self._handle_result(result)
         return user_input
 
-    async def after_thought(
-        self,
-        thought: str,
-        user_request: str = "",
-        action_planned: Optional[str] = None,
-        action_args: Optional[dict[str, Any]] = None,
-        tool_call_history: Optional[list[dict[str, Any]]] = None,
-        context: Optional[dict[str, Any]] = None,
-    ) -> ThoughtContext:
-        """在 Agent 生成 Thought 后、执行 Action 前进行审查
-
-        对应 LangGraph 中 agent → tools 过渡节点的检查。
-        """
-        ctx = ThoughtContext(
-            thought=thought,
-            user_request=user_request,
-            action_planned=action_planned,
-            action_args=action_args or {},
-            tool_call_history=tool_call_history or [],
-        )
-        result = await self.thought_guard.check(ctx, context)
-        self._handle_result(result)
-        return ctx
-
     async def before_tool(
         self,
         tool_name: str,
@@ -129,6 +95,7 @@ class AgentGuardMiddleware:
         """在工具调用前审查参数
 
         对应 LangGraph 中 tools 节点的前置检查。
+        包含循环攻击检测（基于 ToolGuard 内部调用历史）。
         """
         call = ToolCall(
             tool_name=tool_name,
@@ -165,6 +132,10 @@ class AgentGuardMiddleware:
                 self.on_block(result)
             raise GuardBlockedError(result)
 
+    def reset_session(self) -> None:
+        """开始新会话时调用，重置工具调用历史"""
+        self.tool_guard.reset_history()
+
     def create_guard_node(
         self,
         node_name: str,
@@ -177,7 +148,7 @@ class AgentGuardMiddleware:
 
         Args:
             node_name: 节点名称
-            guard_type: 围栏类型 (input/thought/tool/output)
+            guard_type: 围栏类型 (input/tool/output)
         """
         async def input_guard_node(state: dict) -> dict:
             messages = state.get("messages", [])
@@ -185,13 +156,6 @@ class AgentGuardMiddleware:
                 last_message = messages[-1]
                 content = last_message.content if hasattr(last_message, "content") else str(last_message)
                 await self.before_agent(content)
-            return state
-
-        async def thought_guard_node(state: dict) -> dict:
-            thought = state.get("current_thought", "")
-            user_request = state.get("user_request", "")
-            if thought:
-                await self.after_thought(thought=thought, user_request=user_request)
             return state
 
         async def tool_guard_node(state: dict) -> dict:
@@ -210,7 +174,6 @@ class AgentGuardMiddleware:
 
         nodes = {
             "input": input_guard_node,
-            "thought": thought_guard_node,
             "tool": tool_guard_node,
             "output": output_guard_node,
         }

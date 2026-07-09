@@ -14,8 +14,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from guardrails.base import GuardSeverity
 from guardrails.input_guard import InputGuard
 from guardrails.output_guard import OutputGuard
-from guardrails.thought_guard import ThoughtGuard
-from guardrails.tool_guard import ToolGuard
 
 from benchmarks.common.metrics import BenchmarkResult, BenchmarkSummary
 from benchmarks.injecagent.data import InjecAgentSample, load_injecagent_data
@@ -25,7 +23,6 @@ from benchmarks.injecagent.indirect_detection import detect_indirect_injection
 async def run_single_test(
     sample: InjecAgentSample,
     input_guard: InputGuard,
-    thought_guard: ThoughtGuard,
     output_guard: OutputGuard,
 ) -> BenchmarkResult:
     """对单条样本进行评测"""
@@ -45,14 +42,7 @@ async def run_single_test(
             blocked = True
             guard_name = f"IndirectDetection({rule_id})"
 
-    # 第二层：思维围栏检查恶意内容
-    if not blocked:
-        thought_result = await thought_guard.check(sample.malicious_content)
-        if thought_result.severity == GuardSeverity.BLOCK:
-            blocked = True
-            guard_name = "ThoughtGuard"
-
-    # 第三层：输出围栏检查恶意内容
+    # 输出围栏检查恶意内容
     if not blocked:
         output_result = await output_guard.check(sample.malicious_content)
         if output_result.severity == GuardSeverity.WARN:
@@ -74,12 +64,11 @@ async def run_benchmark() -> BenchmarkSummary:
     samples = load_injecagent_data()
 
     input_guard = InputGuard()
-    thought_guard = ThoughtGuard()
     output_guard = OutputGuard()
 
     results: list[BenchmarkResult] = []
     for sample in samples:
-        result = await run_single_test(sample, input_guard, thought_guard, output_guard)
+        result = await run_single_test(sample, input_guard, output_guard)
         results.append(result)
 
     return BenchmarkSummary("InjecAgent (Synthetic)", results)

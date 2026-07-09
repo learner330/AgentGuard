@@ -12,37 +12,19 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from guardrails.base import GuardSeverity
-from guardrails.thought import ThoughtContext
-from guardrails.thought_guard import ThoughtGuard
 from guardrails.tool_guard import ToolGuard
 
 from benchmarks.common.metrics import BenchmarkResult, BenchmarkSummary
 from benchmarks.agentdojo.data import AgentDojoSample, load_agentdojo_data
 
 
-async def run_single_test(
-    sample: AgentDojoSample,
-    thought_guard: ThoughtGuard,
-) -> BenchmarkResult:
+async def run_single_test(sample: AgentDojoSample) -> BenchmarkResult:
     """对单条样本评测"""
     blocked = False
     guard_name = ""
 
-    # 构建 ThoughtContext
-    ctx = ThoughtContext(
-        thought=sample.thought_text,
-        user_request=sample.task_description,
-        action_planned=sample.planned_action,
-    )
-
-    # 第二层：思维围栏
-    thought_result = await thought_guard.check(ctx)
-    if thought_result.severity == GuardSeverity.BLOCK:
-        blocked = True
-        guard_name = "ThoughtGuard"
-
-    # 第三层：工具围栏（检查被诱导的工具调用）
-    if not blocked and sample.planned_action in {"http_request", "query_db", "read_file"}:
+    # 工具围栏（检查被诱导的工具调用）
+    if sample.planned_action in {"http_request", "query_db", "read_file"}:
         from guardrails.tool_call import ToolCall
         tool_guard = ToolGuard()
         call = ToolCall(
@@ -82,11 +64,10 @@ def _extract_args(sample: AgentDojoSample) -> dict:
 async def run_benchmark() -> BenchmarkSummary:
     """运行 AgentDojo 评测"""
     samples = load_agentdojo_data()
-    thought_guard = ThoughtGuard()
 
     results: list[BenchmarkResult] = []
     for sample in samples:
-        result = await run_single_test(sample, thought_guard)
+        result = await run_single_test(sample)
         results.append(result)
 
     return BenchmarkSummary("AgentDojo (Synthetic)", results)

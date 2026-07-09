@@ -1,6 +1,6 @@
 """AgentGuard 总控类
 
-将四层围栏串联为统一的防护流程，实现"三行代码挂载"的核心承诺。
+将三层围栏串联为统一的防护流程，实现"三行代码挂载"的核心承诺。
 
 使用方式：
     from guardrails.agent_guard import AgentGuard
@@ -11,10 +11,8 @@
     # 方式 2：代码构建
     guard = AgentGuard(
         input_guard=InputGuard(),
-        thought_guard=ThoughtGuard(),
         tool_guard=ToolGuard(allowed_paths=["/workspace"]),
         output_guard=OutputGuard(mask_output=True),
-        strict_mode=False,
     )
 
     # 单个检查
@@ -37,10 +35,8 @@ import yaml
 
 from guardrails.base import GuardLevel, GuardResult, GuardSeverity
 from guardrails.input_guard import InputGuard
-from guardrails.thought_guard import ThoughtGuard
 from guardrails.tool_guard import ToolGuard
 from guardrails.output_guard import OutputGuard
-from guardrails.thought import ThoughtContext
 from guardrails.tool_call import ToolCall
 
 logger = logging.getLogger(__name__)
@@ -52,7 +48,6 @@ class ProtectionResult:
     Attributes:
         allowed: 是否允许通过
         input_result: 输入围栏结果
-        thought_result: 思维围栏结果
         tool_results: 工具围栏结果列表
         output_result: 输出围栏结果
         blocked_at: 被哪一层阻断（None 表示全部通过）
@@ -62,7 +57,6 @@ class ProtectionResult:
     def __init__(self) -> None:
         self.allowed: bool = True
         self.input_result: Optional[GuardResult] = None
-        self.thought_result: Optional[GuardResult] = None
         self.tool_results: list[GuardResult] = []
         self.output_result: Optional[GuardResult] = None
         self.blocked_at: Optional[GuardLevel] = None
@@ -75,7 +69,6 @@ class ProtectionResult:
             "allowed": self.allowed,
             "blocked_at": self.blocked_at.value if self.blocked_at else None,
             "input": self.input_result.severity.value if self.input_result else "skipped",
-            "thought": self.thought_result.severity.value if self.thought_result else "skipped",
             "tool_checks": len(self.tool_results),
             "output": self.output_result.severity.value if self.output_result else "skipped",
         }
@@ -84,19 +77,17 @@ class ProtectionResult:
 class AgentGuard:
     """AgentGuard 总控类
 
-    将四层围栏串联为统一入口，提供简化的 API：
+    将三层围栏串联为统一入口，提供简化的 API：
 
     - check_input(): 仅输入围栏
-    - check_thought(): 仅思维围栏
     - check_tool(): 仅工具围栏
     - check_output(): 仅输出围栏
-    - protect(): 全流程防护（输入 → 思维 → 工具 → 输出）
+    - protect(): 全流程防护（输入 → 工具 → 输出）
     """
 
     def __init__(
         self,
         input_guard: InputGuard | None = None,
-        thought_guard: ThoughtGuard | None = None,
         tool_guard: ToolGuard | None = None,
         output_guard: OutputGuard | None = None,
         strict_mode: bool = False,
@@ -104,13 +95,11 @@ class AgentGuard:
         """
         Args:
             input_guard: 输入围栏实例
-            thought_guard: 思维围栏实例
             tool_guard: 工具围栏实例
             output_guard: 输出围栏实例
             strict_mode: 严格模式——WARN 也阻断（默认仅 BLOCK 阻断）
         """
         self.input_guard = input_guard or InputGuard()
-        self.thought_guard = thought_guard or ThoughtGuard()
         self.tool_guard = tool_guard or ToolGuard()
         self.output_guard = output_guard or OutputGuard()
         self.strict_mode = strict_mode
@@ -142,14 +131,6 @@ class AgentGuard:
             custom_patterns=input_cfg.get("custom_patterns"),
         )
 
-        # 思维围栏
-        thought_cfg = config.get("thought_guard", {})
-        thought_guard = ThoughtGuard(
-            enabled=thought_cfg.get("enabled", True),
-            max_tool_calls_per_loop=thought_cfg.get("max_tool_calls_per_loop", 10),
-            custom_patterns=thought_cfg.get("custom_patterns"),
-        )
-
         # 工具围栏
         tool_cfg = config.get("tool_guard", {})
         fs_cfg = tool_cfg.get("file_system", {})
@@ -157,6 +138,10 @@ class AgentGuard:
         net_cfg = tool_cfg.get("network", {})
         sql_cfg = tool_cfg.get("sql", {})
         mcp_cfg = tool_cfg.get("mcp", {})
+        loop_cfg = tool_cfg.get("loop_detection", {})
+        loop_freq = loop_cfg.get("frequency_threshold")
+        if loop_freq is not None:
+            loop_freq = int(loop_freq)
 
         tool_guard = ToolGuard(
             enabled=tool_cfg.get("enabled", True),
@@ -167,6 +152,10 @@ class AgentGuard:
             allowed_domains=net_cfg.get("allowed_domains"),
             allow_sql_write=sql_cfg.get("allow_write", False),
             mcp_strict_mode=mcp_cfg.get("strict_mode", False),
+            loop_detection=loop_cfg.get("enabled", True),
+            loop_window_size=loop_cfg.get("window_size", 20),
+            loop_frequency_threshold=loop_freq,
+            loop_identical_threshold=loop_cfg.get("identical_threshold", 3),
         )
 
         # 输出围栏
@@ -179,7 +168,6 @@ class AgentGuard:
 
         return cls(
             input_guard=input_guard,
-            thought_guard=thought_guard,
             tool_guard=tool_guard,
             output_guard=output_guard,
             strict_mode=strict,
@@ -201,25 +189,6 @@ class AgentGuard:
         """第一层：输入围栏"""
         return await self.input_guard.check(user_input, context)
 
-    async def check_thought(
-        self,
-        thought: str,
-        user_request: str = "",
-        action_planned: Optional[str] = None,
-        action_args: Optional[dict[str, Any]] = None,
-        tool_call_history: Optional[list[dict[str, Any]]] = None,
-        context: Optional[dict[str, Any]] = None,
-    ) -> GuardResult:
-        """第二层：思维围栏"""
-        ctx = ThoughtContext(
-            thought=thought,
-            user_request=user_request,
-            action_planned=action_planned,
-            action_args=action_args or {},
-            tool_call_history=tool_call_history or [],
-        )
-        return await self.thought_guard.check(ctx, context)
-
     async def check_tool(
         self,
         tool_name: str,
@@ -227,7 +196,7 @@ class AgentGuard:
         tool_description: Optional[str] = None,
         context: Optional[dict[str, Any]] = None,
     ) -> GuardResult:
-        """第三层：工具围栏"""
+        """第二层：工具围栏"""
         call = ToolCall(
             tool_name=tool_name,
             tool_args=tool_args,
@@ -238,31 +207,33 @@ class AgentGuard:
     async def check_output(
         self, output: str, context: Optional[dict[str, Any]] = None
     ) -> GuardResult:
-        """第四层：输出围栏"""
+        """第三层：输出围栏"""
         return await self.output_guard.check(output, context)
 
     def mask_output(self, output: str) -> str:
         """脱敏输出文本"""
         return self.output_guard.mask_sensitive(output)
 
+    def reset_session(self) -> None:
+        """开始新会话时调用，重置工具调用历史"""
+        self.tool_guard.reset_history()
+
     # ============ 全流程防护 ============
 
     async def protect(
         self,
         user_input: str,
-        thought: Optional[str] = None,
         tool_calls: Optional[list[dict[str, Any]]] = None,
         final_output: Optional[str] = None,
         context: Optional[dict[str, Any]] = None,
     ) -> ProtectionResult:
-        """全流程防护：按顺序执行四层围栏
+        """全流程防护：按顺序执行三层围栏
 
-        流程：输入检测 → 思维检测 → 工具检测 → 输出过滤
+        流程：输入检测 → 工具检测 → 输出过滤
         任一层阻断则立即返回，不再继续后续检测。
 
         Args:
             user_input: 用户输入文本
-            thought: Agent 生成的思想文本（可选）
             tool_calls: 工具调用列表，每项包含 tool_name, tool_args, tool_description（可选）
             final_output: 最终输出文本（可选）
             context: 全流程共享上下文
@@ -279,20 +250,7 @@ class AgentGuard:
             result.blocked_at = GuardLevel.INPUT
             return result
 
-        # 2. 思维围栏
-        if thought:
-            result.thought_result = await self.check_thought(
-                thought=thought,
-                user_request=user_input,
-                tool_call_history=context.get("tool_call_history", []) if context else [],
-                context=context,
-            )
-            if self._is_blocked(result.thought_result):
-                result.allowed = False
-                result.blocked_at = GuardLevel.THOUGHT
-                return result
-
-        # 3. 工具围栏
+        # 2. 工具围栏
         if tool_calls:
             for tc in tool_calls:
                 tool_result = await self.check_tool(
@@ -307,16 +265,14 @@ class AgentGuard:
                     result.blocked_at = GuardLevel.TOOL
                     return result
 
-        # 4. 输出围栏
+        # 3. 输出围栏
         if final_output:
             result.output_result = await self.check_output(final_output, context)
-            # 输出围栏默认仅 WARN，不阻断
             if result.output_result.severity == GuardSeverity.BLOCK:
                 result.allowed = False
                 result.blocked_at = GuardLevel.OUTPUT
                 return result
 
-            # 脱敏处理
             if self.output_guard.mask_output:
                 result.masked_output = self.output_guard.mask_sensitive(final_output)
 

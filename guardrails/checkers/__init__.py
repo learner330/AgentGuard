@@ -1,6 +1,6 @@
 """各类工具检查器实现"""
 
-from guardrails.checkers.file_checker import FileSystemChecker, SENSITIVE_EXTENSIONS, DANGEROUS_PATH_PATTERNS
+from guardrails.checkers.file_checker import FileSystemChecker, SENSITIVE_EXTENSIONS
 from guardrails.checkers.shell_checker import ShellChecker
 from guardrails.checkers.network_checker import NetworkChecker
 from guardrails.checkers.sql_checker import SQLChecker
@@ -13,5 +13,4 @@ __all__ = [
     "SQLChecker",
     "MCPDescriptionScanner",
     "SENSITIVE_EXTENSIONS",
-    "DANGEROUS_PATH_PATTERNS",
 ]

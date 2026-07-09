@@ -1,117 +1,72 @@
-# ============================================================
-# AgentGuard 围栏配置
-# ============================================================
+# AgentGuard 配置文件
+# 三层纵深防御：输入 → 工具 → 输出
 
-# 全局开关
-global:
-  enabled: true
-  log_level: info  # debug / info / warn / error
+guard:
+  # 输入围栏（提示注入检测）
+  input:
+    enabled: true
+    # 快速规则层：正则匹配（默认开启，零延迟）
+    regex_enabled: true
+    # 语义分析层：Embedding 相似度检测（可选）
+    semantic_check: false
+    semantic_threshold: 0.72
+    # LLM Judge 层：深度语义判断（可选，需要 llm_client）
+    llm_judge: false
+    llm_judge_threshold: 0.55
 
-# 第一层：输入围栏
-input_guard:
-  enabled: true
-  # 规则引擎开关
-  rules:
-    instruction_override: true  # 指令覆盖检测
-    role_hijack: true           # 角色劫持检测
-    jailbreak: true             # 越狱模板检测
-    encoding_bypass: true       # 编码绕过检测
-  # 自定义规则（追加到内置规则之后）
-  custom_patterns: []
-    # - ["your_regex", "CUSTOM-001"]
-  # 后续版本：ML 分类器和 LLM Judge 配置
-  ml_classifier:
-    enabled: false
-    model: "deberta-v3-base"
-    threshold: 0.75
-    model_path: "models/input_guard_classifier"
-  llm_judge:
-    enabled: false
-    model: "gpt-4o-mini"
-    prompt_file: "configs/prompts/input_guard_judge.txt"
+  # 工具围栏（工具调用参数审查）
+  tool:
+    enabled: true
+    # 文件系统检查器
+    file:
+      enabled: true
+      # 允许的基目录列表（白名单策略，默认 /tmp 和 /var/tmp）
+      allowed_base_paths: ["/tmp", "/var/tmp"]
+      # 是否允许访问用户 home 目录（默认 false，更严格）
+      allow_home: false
+    # Shell 命令检查器
+    shell:
+      enabled: true
+      # 允许执行的命令白名单（默认只允许基础安全命令）
+      allowed_commands: ["ls", "cat", "grep", "find", "wc", "head", "tail", "sort", "uniq", "awk", "sed", "cut", "tr", "echo", "printf", "date", "whoami", "id", "pwd", "which", "file", "stat"]
+      # 是否允许重定向（默认 false）
+      allow_redirect: false
+      # 是否允许管道（默认 false）
+      allow_pipe: false
+    # 网络检查器（SSRF 防护）
+    network:
+      enabled: true
+      # 是否允许访问私网地址（默认 false）
+      allow_private: false
+      # 允许的域名白名单（空列表表示不限制）
+      allowed_domains: []
+      # 拒绝的域名黑名单
+      blocked_domains: ["evil.com", "malicious.net"]
+    # SQL 检查器
+    sql:
+      enabled: true
+      # 是否允许写操作（INSERT/UPDATE/DELETE，默认 false）
+      allow_write: false
+      # 是否允许多语句执行（默认 false）
+      allow_multi_statement: false
+    # MCP 描述扫描器
+    mcp:
+      enabled: true
+      # 严格模式（更激进的阻断）
+      strict_mode: false
+      # 是否启用 LLM Judge 语义分析（可选，需要 llm_client）
+      llm_judge: false
+      llm_judge_threshold: "medium"
 
-# 第二层：思维围栏
-thought_guard:
-  enabled: true
-  # 循环攻击检测参数
-  max_tool_calls_per_loop: 10
-  loop_detection_window: 3
-  # 风险检测规则
-  rules:
-    privilege_escalation: true  # 越权访问
-    data_exfiltration: true     # 数据外泄
-    dangerous_action: true      # 危险操作
-    unauthorized_action: true   # 越权判定
-  # 用户自定义风险模式
-  custom_patterns: []
-    # - [regex, rule_id, risk_level]  # risk_level: low / medium / high
-
-# 第三层：工具围栏
-tool_guard:
-  enabled: true
-  auto_route: true  # 按工具名自动路由到专用检查器
-
-  # 文件操作
-  file_system:
-    allowed_paths:
-      - "/workspace"
-      - "/data"
-    blocked_paths:
-      - "/etc"
-      - "/proc"
-      - "/sys"
-      - "/dev"
-    allow_sensitive_extensions: false
-
-  # Shell 命令
-  shell:
-    extra_blocked_commands: []
-    # - "some_command"
-
-  # 网络请求（SSRF 防护）
-  network:
-    allow_private_networks: false
-    allowed_domains: []
-      # - "api.example.com"
-    blocked_domains: []
-
-  # 数据库
-  sql:
-    allow_write: false            # 默认禁止写操作
-    allow_multi_statement: false  # 默认禁止多语句
-
-  # MCP 工具投毒扫描
-  mcp:
+  # 输出围栏（敏感信息泄露检测）
+  output:
+    enabled: true
+    # 严格模式：将 WARN 升级为 BLOCK
     strict_mode: false
-    max_description_length: 2000
-    max_urls_in_description: 2
-    extra_sensitive_patterns: []
-
-# 第四层：输出围栏
-output_guard:
-  enabled: true
-  mask_output: true  # 自动脱敏敏感信息
-  # 敏感信息检测
-  detection:
-    phone: true          # 手机号
-    id_card: true        # 身份证
-    bank_card: true      # 银行卡
-    email: true          # 邮箱
-    api_key: true        # API Key / Token
-    jwt: true            # JWT
-    password: true       # 密码
-    system_prompt_leak: true
-  # System Prompt 配置（用于检测泄露）
-  system_prompt: null  # 填写你的系统提示词以启用泄露检测
-
-# 框架集成
-integrations:
-  langgraph:
-    # LangGraph 嵌入点配置
-    intercept_nodes:
-      - "agent"      # 在 agent 节点前后插入围栏
-      - "tools"      # 在 tools 节点前检查工具调用
-    input_guard_node: "input_guard"      # 输入围栏的 virtual node 名称
-    thought_guard_node: "thought_guard"
-    tool_guard_node: "tool_guard"
-    output_guard_node: "output_guard"
+    # 系统提示词（用于检测 System Prompt 泄露）
+    system_prompt: ""
+    # 脱敏配置
+    masking:
+      enabled: true
+      # 脱敏模式：partial（部分脱敏）/ full（完全替换）
+      mode: "partial"

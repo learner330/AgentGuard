@@ -121,7 +121,7 @@ async def demo_architecture_overview() -> None:
 
     architecture = """
     邮件 Agent 处理流程：
-    
+
     恶意邮件输入
         │
         ▼
@@ -136,28 +136,12 @@ async def demo_architecture_overview() -> None:
                    │ PASS
                    ▼
     ┌─────────────────────────────────────┐
-    │  2. Agent 推理 (Thought)             │
-    │     - 读取邮件内容                    │
-    │     - 被邮件中的隐藏指令诱导           │
-    │     - 生成 Action: send_email(...)    │
-    └──────────────┬──────────────────────┘
-                   │
-                   ▼
-    ┌─────────────────────────────────────┐
-    │  3. ThoughtGuard (待实现)            │
-    │     审查 Agent 意图                    │
-    │     - 检测: 越权操作意图               │
-    │     - 检测: 批量数据外泄意向           │
-    │     风险分级: 🟢 / 🟡 / 🔴            │
-    └──────────────┬──────────────────────┘
-                   │
-                   ▼
-    ┌─────────────────────────────────────┐
-    │  4. ToolGuard (待实现)               │
+    │  2. ToolGuard                       │
     │     审查工具调用参数                   │
     │     - 检测: 异常收件人地址             │
     │     - 检测: 批量转发行为               │
     │     - 白名单校验 / 参数审查            │
+    │     - 检测: 循环攻击 / 重复调用        │
     └──────────────┬──────────────────────┘
                    │ PASS
                    ▼
@@ -165,7 +149,7 @@ async def demo_architecture_overview() -> None:
                    │
                    ▼
     ┌─────────────────────────────────────┐
-    │  5. OutputGuard (待实现)             │
+    │  3. OutputGuard                    │
     │     过滤输出中的敏感信息               │
     │     - 检测: 发送确认中的敏感数据       │
     │     - 脱敏: 邮件地址、密钥等           │
@@ -194,11 +178,9 @@ async def main() -> None:
     print_section("演示完成")
     print("  当前实现状态:")
     print("    ✓ InputGuard (规则引擎)")
-    print("    ✗ ThoughtGuard (待实现)")
-    print("    ✗ ToolGuard (待实现)")
-    print("    ✗ OutputGuard (待实现)")
+    print("    ✓ ToolGuard (参数审查+循环检测)")
+    print("    ✓ OutputGuard (敏感信息脱敏)")
     print()
-    print("  下一步: 请继续实现 ToolGuard 以拦截异常工具调用")
 
 
 if __name__ == "__main__":
