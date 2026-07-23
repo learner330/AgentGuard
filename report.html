@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentGuard 测试报告</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117; color: #c9d1d9; line-height: 1.6;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 40px 20px; }
+        .header {
+            text-align: center; padding: 40px 0; border-bottom: 1px solid #30363d;
+        }
+        .header h1 {
+            font-size: 2.4em; color: #58a6ff; margin-bottom: 8px;
+        }
+        .header .subtitle { color: #8b949e; font-size: 1.1em; }
+        .header .meta { color: #6e7681; font-size: 0.9em; margin-top: 12px; }
+        .section {
+            margin-top: 40px; background: #161b22; border-radius: 12px;
+            padding: 28px; border: 1px solid #30363d;
+        }
+        .section-title {
+            font-size: 1.4em; color: #f0f6fc; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-title::before {
+            content: ''; width: 4px; height: 24px; background: #58a6ff;
+            border-radius: 2px;
+        }
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px; margin-bottom: 20px;
+        }
+        .summary-card {
+            background: #21262d; border-radius: 10px; padding: 20px;
+            text-align: center; border: 1px solid #30363d;
+        }
+        .summary-card .value { font-size: 2em; font-weight: 700; }
+        .summary-card .label { color: #8b949e; font-size: 0.85em; margin-top: 4px; }
+        .summary-card.green .value { color: #3fb950; }
+        .summary-card.blue .value { color: #58a6ff; }
+        .summary-card.yellow .value { color: #d29922; }
+        .summary-card.purple .value { color: #bc8cff; }
+        .progress-bar {
+            background: #21262d; border-radius: 8px; height: 28px;
+            overflow: hidden; margin: 12px 0;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #238636, #3fb950); height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 600; font-size: 0.85em;
+            transition: width 0.6s ease;
+        }
+        .badge {
+            display: inline-block; padding: 2px 10px; border-radius: 12px;
+            font-size: 0.8em; font-weight: 600;
+        }
+        .badge-pass { background: #238636; color: #fff; }
+        .badge-fail { background: #da3633; color: #fff; }
+        .scenario-card {
+            background: #21262d; border-radius: 10px; margin-bottom: 16px;
+            overflow: hidden; border: 1px solid #30363d;
+        }
+        .scenario-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 20px; border-left: 4px solid #30363d;
+        }
+        .scenario-id {
+            background: #30363d; padding: 2px 10px; border-radius: 6px;
+            font-size: 0.85em; color: #8b949e;
+        }
+        .scenario-name { flex: 1; font-weight: 600; color: #f0f6fc; }
+        .scenario-status {
+            padding: 4px 14px; border-radius: 12px; font-size: 0.8em;
+            font-weight: 700; color: #fff;
+        }
+        .scenario-body { padding: 16px 20px; font-size: 0.9em; }
+        .scenario-body div { padding: 6px 0; }
+        .unguarded-attacked { color: #f85149; }
+        .unguarded-safe { color: #8b949e; }
+        .guarded-blocked { color: #3fb950; font-weight: 600; }
+        .guarded-safe { color: #3fb950; }
+        .guard-failed { color: #f85149; font-weight: 600; }
+        .error { color: #f85149; }
+        .trigger-info {
+            background: #1a1f2e; border-radius: 8px; padding: 14px 18px;
+            margin-bottom: 16px; border-left: 3px solid #d29922;
+        }
+        .trigger-label { font-weight: 700; color: #d29922; margin-bottom: 4px; font-size: 0.85em; }
+        .trigger-desc { color: #c9d1d9; font-size: 0.88em; line-height: 1.5; }
+        .comparison-result {
+            padding: 10px 0; margin-bottom: 14px;
+        }
+        .comparison-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 14px; margin-top: 12px;
+        }
+        .comparison-col {
+            background: #1a1f2e; border-radius: 10px;
+            overflow: hidden; border: 1px solid #30363d;
+        }
+        .comparison-col.unguarded { border-top: 3px solid #f85149; }
+        .comparison-col.guarded { border-top: 3px solid #3fb950; }
+        .comparison-col-title {
+            padding: 12px 16px; background: #161b22;
+            font-weight: 700; color: #f0f6fc; font-size: 0.9em;
+            border-bottom: 1px solid #30363d;
+        }
+        .comparison-col-body {
+            padding: 10px 14px; min-height: 60px;
+        }
+        .exec-step {
+            padding: 6px 8px; margin-bottom: 4px;
+            border-radius: 6px; font-size: 0.83em;
+            display: flex; align-items: flex-start; gap: 6px;
+            line-height: 1.4;
+        }
+        .exec-step.step-blocked {
+            background: #23863618; border-left: 3px solid #3fb950;
+        }
+        .exec-step.step-dangerous {
+            background: #da363318; border-left: 3px solid #f85149;
+        }
+        .step-icon { flex-shrink: 0; font-size: 0.95em; }
+        .step-type { color: #8b949e; font-weight: 600; flex-shrink: 0; min-width: 36px; }
+        .step-text { color: #c9d1d9; word-break: break-word; }
+        .step-empty { color: #484f58; font-style: italic; padding: 14px; font-size: 0.85em; }
+        .step-final {
+            margin-top: 4px; padding: 8px 10px;
+            background: #21262d; border-radius: 6px;
+            color: #8b949e; font-size: 0.8em;
+            font-weight: 400; max-height: 80px; overflow-y: auto;
+        }
+        @media (max-width: 700px) {
+            .comparison-grid { grid-template-columns: 1fr; }
+        }
+        .bench-table {
+            width: 100%; border-collapse: collapse; margin-top: 12px;
+        }
+        .bench-table th, .bench-table td {
+            padding: 10px 16px; text-align: left;
+            border-bottom: 1px solid #30363d;
+        }
+        .bench-table th {
+            color: #8b949e; font-weight: 600; font-size: 0.85em;
+            text-transform: uppercase;
+        }
+        .bench-table td { color: #c9d1d9; }
+        .arch-box {
+            background: #21262d; border-radius: 10px; padding: 24px;
+            font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85em;
+            line-height: 1.8; overflow-x: auto;
+        }
+        .arch-layer {
+            display: inline-block; padding: 4px 12px; border-radius: 6px;
+            font-weight: 600; margin: 2px;
+        }
+        .arch-input { background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb; }
+        .arch-tool { background: #23863622; color: #3fb950; border: 1px solid #238636; }
+        .arch-output { background: #bc8cff22; color: #bc8cff; border: 1px solid #bc8cff; }
+        .footer {
+            text-align: center; padding: 40px 0; color: #6e7681; font-size: 0.85em;
+            border-top: 1px solid #30363d; margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>AgentGuard 测试报告</h1>
+        <div class="subtitle">LLM Agent 安全围栏中间件 &mdash; 三层防御体系</div>
+        <div class="meta">
+            生成时间: 2026-07-08 17:48:31 | 模型: qwen2.5:3b | 版本: v0.5.0
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">总览</div>
+        <div class="summary-grid">
+            <div class="summary-card green">
+                <div class="value">67</div>
+                <div class="label">单元测试通过</div>
+            </div>
+            <div class="summary-card blue">
+                <div class="value">0</div>
+                <div class="label">MCP 攻击场景</div>
+            </div>
+            <div class="summary-card purple">
+                <div class="value">87.50%</div>
+                <div class="label">Benchmark 准确率</div>
+            </div>
+            <div class="summary-card yellow">
+                <div class="value">75.00%</div>
+                <div class="label">攻击拦截率</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">三层防御架构</div>
+        <div class="arch-box">
+            <span class="arch-layer arch-input">InputGuard</span> 输入围栏 &mdash; 防御直接提示注入
+            <br>
+            <span class="arch-layer arch-tool">ToolGuard</span> 工具围栏 &mdash; 参数审查 + 循环检测 + MCP 投毒扫描
+            <br>
+            <span class="arch-layer arch-output">OutputGuard</span> 输出围栏 &mdash; 敏感信息检测与脱敏
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">单元测试 <span class="badge badge-pass">67 pass</span></div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: 100.0%;">100%</div>
+        </div>
+        
+        <div style="margin-top: 12px; color: #8b949e; font-size: 0.85em;">
+            总计 67 项 | 通过 67 | 失败 0 | 耗时 0.14s
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">MCP 工具投毒攻击复现</div>
+        <p style="color: #8b949e; margin-bottom: 16px;">
+            复现来源: Invariant Labs MCP Tool Poisoning Attack (2025-04)
+        </p>
+        
+    </div>
+
+    <div class="section">
+        <div class="section-title">Benchmark 评测</div>
+        <table class="bench-table">
+            <thead>
+                <tr>
+                    <th>指标</th>
+                    <th>结果</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>总测试数</td><td>8</td></tr>
+                <tr><td>正确数</td><td>7</td></tr>
+                <tr><td>准确率</td><td>87.50%</td></tr>
+                <tr><td>攻击拦截率 (Detection Rate)</td><td>75.00%</td></tr>
+                <tr><td>误报率 (FPR)</td><td>0.00%</td></tr>
+                <tr><td>F1 Score</td><td>85.71%</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        AgentGuard v0.5.0 &mdash; MIT License
+    </div>
+</div>
+</body>
+</html>

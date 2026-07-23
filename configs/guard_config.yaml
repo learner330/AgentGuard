@@ -5,14 +5,12 @@ guard:
   # 输入围栏（提示注入检测）
   input:
     enabled: true
-    # 快速规则层：正则匹配（默认开启，零延迟）
-    regex_enabled: true
     # 语义分析层：Embedding 相似度检测（可选）
     semantic_check: false
     semantic_threshold: 0.72
-    # LLM Judge 层：深度语义判断（可选，需要 llm_client）
+    # LLM Judge 层：行为意图分析（主要检测层，需要 llm_client）
     llm_judge: false
-    llm_judge_threshold: 0.55
+    llm_judge_threshold: "medium"
 
   # 工具围栏（工具调用参数审查）
   tool:
@@ -52,10 +50,8 @@ guard:
     # MCP 描述扫描器
     mcp:
       enabled: true
-      # 严格模式（更激进的阻断）
-      strict_mode: false
-      # 是否启用 LLM Judge 语义分析（可选，需要 llm_client）
-      llm_judge: false
+      # 是否启用 LLM Judge 语义分析（需要 llm_client）
+      llm_judge: true
       llm_judge_threshold: "medium"
 
   # 输出围栏（敏感信息泄露检测）

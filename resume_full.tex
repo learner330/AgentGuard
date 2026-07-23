@@ -1,0 +1,454 @@
+\documentclass[11pt,a4paper,sans]{moderncv}
+
+% Requirement: XeLaTeX
+% 使用方法:
+%   ***必须使用XeLaTeX编译***
+%   撰写简历时：在\CN{}内填写中文内容，后其紧跟的\EN{}内填写英文内容
+%   导出时: 选择[Chinese]为中文版，选择[English]为英文版
+
+\usepackage[Chinese]{languageSelection} % 导出中文版
+% \usepackage[English]{languageSelection} % 导出英文版
+
+\moderncvstyle{banking}
+\moderncvcolor{black}
+\nopagenumbers{}
+
+\usepackage[utf8]{inputenc}
+\usepackage{ragged2e}
+\usepackage[scale=0.90]{geometry}
+\usepackage{import}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{amssymb}
+\usepackage{fontawesome5}
+\usepackage{zh_CN-Adobefonts_external}
+\usepackage{xcolor}
+
+% \newcommand*{\customcventry}[7][.13em]{
+% \begin{tabular}{@{}l}
+% {\bfseries #4} \\
+% {\itshape #3}
+% \end{tabular}
+% \hfill
+% \begin{tabular}{l@{}}
+% {\bfseries #5} \\
+% {\itshape #2}
+% \end{tabular}
+% \ifx&#7&%
+% \else{\\
+% {\small#7}%
+% % \begin{minipage}{\maincolumnwidth}%
+% % \small#7%
+% % \end{minipage}
+% }\fi%
+% \par\addvspace{#1}}
+
+\newcommand*{\customcventry}[7][1em]{
+\begin{tabular}{@{}l}
+{\bfseries #4} \\
+{\itshape #3}
+\end{tabular}
+\hfill
+\begin{tabular}{l@{}}
+{\bfseries #5} \\
+{\itshape #2}
+\end{tabular}
+\ifx&#7&%
+\else{\\[-0.8em]
+{\small#7}%
+}\fi%
+\par\addvspace{#1}}
+
+%**************************************************
+%*                 从这里开始                       *
+%**************************************************
+
+\name{郭金良}{Guo Jinliang}
+
+\begin{document}
+\makecvtitle
+\vspace*{-10mm}
+
+% 联系方式
+\CN{
+\begin{center}
+\begin{tabular}{ c c c }
+\enspace {电话: +86 13042412362} &
+\enspace {邮箱: 13042412362@163.com} &
+\enspace \href{https://github.com/learner330}{GitHub: learner330} \\
+% \enspace {申请方向: BMW ProMotion Ph.D. Trainee}
+\end{tabular}
+\end{center}
+}
+
+\EN{
+\begin{center}
+\begin{tabular}{ c c c }
+\enspace {Tel: +86 13042412362} &
+\enspace {Email: 13042412362@163.com} &
+\enspace \href{https://github.com/learner330}{GitHub: learner330} \\
+% \enspace {Target: BMW ProMotion Ph.D. Trainee}
+\end{tabular}
+\end{center}
+}
+
+% 个人简介
+\CN{
+\section{个人简介}
+具备网络空间安全背景，兼有车联网平台研发与AI安全项目实践经验，熟悉多种主流编程语言，具备从需求分析、数据链路设计到后端服务落地的全周期工程能力。在校期间担任项目后端组组长，负责技术方案制定与团队协作推进。熟练使用 Claude、Cursor 等 AI 编程工具提升开发效率。
+}
+\EN{
+\section{Profile}
+Possess a background in cybersecurity with experience in telematics platform development and AI security research. Proficient in multiple programming languages with full-cycle engineering capabilities spanning requirement analysis, data pipeline design, and backend service implementation. Served as backend team lead on a university project, responsible for technical planning and team coordination. Proficient in leveraging AI coding tools such as Claude and Cursor to improve development efficiency.
+}
+
+% 教育经历
+\CN{\section{教育经历}}
+\EN{\section{Education}}
+
+\CN{
+\textbf{南洋理工大学} 
+\hfill 新加坡 \\
+\textit{网络安全硕士} 
+\hfill 08/2025 -- 01/2027
+
+\vspace{0.2em}
+
+\textbf{天津大学} 
+\hfill 天津，中国 \\
+\textit{网络空间安全学士} 
+\hfill 09/2019 -- 06/2023
+}
+\EN{
+\textbf{Nanyang Technological University} 
+\hfill Singapore \\
+\textit{MSc in Cybersecurity} 
+\hfill 08/2025 -- 01/2027
+
+\vspace{0.2em}
+
+\textbf{Tianjin University} 
+\hfill Tianjin, China \\
+\textit{BSc in Cyberspace Security} 
+\hfill 09/2019 -- 06/2023
+}
+
+% 工作/实习经历
+\CN{\section{工作/实习经历}}
+\EN{\section{Work Experience}}
+
+\CN{
+\customcventry{06/2026 -- 至今}
+{{\color{blue}{美团}}}
+{车联网安全工程师}
+{北京，中国}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item 参与 VSOC 无人车信息安全态势感知平台的研发，负责车辆安全数据采集链路、入侵检测告警引擎及多源风险统一处置模块的设计与实现。
+\end{itemize}
+}
+}
+
+\EN{
+\customcventry{06/2026 -- present}
+{{\color{blue}{Meituan}}}
+{Connected Vehicle Security Engineer}
+{Beijing, China}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item Contributed to the development of VSOC, an end-to-end connected vehicle security operations platform, focusing on vehicle security data collection, intrusion detection, and unified management of multi-source risks.
+\end{itemize}
+}
+}
+
+\CN{
+\customcventry{01/2026 -- 06/2026}
+{{\color{blue}{华为新加坡研究所}}}
+{鸿蒙安全开发工程师}
+{新加坡}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item 参与鸿蒙端侧AI智能体安全围栏开发，面向智能体任务执行过程中的越权调用、敏感数据访问、异常工具调用链路与潜在隐私泄露风险，设计运行时安全检测与风险拦截方案。
+\end{itemize}
+}
+}
+\EN{
+\customcventry{01/2026 -- 06/2026}
+{{\color{blue}{Huawei Singapore Research Institute}}}
+{HarmonyOS Security Development Engineer}
+{Singapore}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item Participated in the development of on-device AI agent guardrails for HarmonyOS, targeting risks such as unauthorized calls, sensitive data access, abnormal tool invocation chains, and potential privacy leakage during agent execution.
+\end{itemize}
+}
+}
+
+\CN{
+\customcventry{07/2025 -- 12/2025}
+{{\color{blue}{南洋理工大学网络安全实验室}}}
+{代码大模型调研}
+{新加坡}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item 调研代码大模型在代码生成、漏洞检测、自动化修复、隐私保护与安全评估等方向的前沿研究，跟踪模型能力边界、数据泄露风险与安全对齐问题。
+    \item 汇总代码大模型在软件研发流程中的应用场景，包括需求理解、代码补全、测试生成、缺陷定位、安全审计和代码语义检索，为AI辅助研发工具链设计提供技术参考。
+\end{itemize}
+}
+}
+\EN{
+\customcventry{07/2025 -- 12/2025}
+{{\color{blue}{NTU Cyber Security Lab}}}
+{Research on Code Large Language Models}
+{Singapore}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item Researched frontier studies of code LLMs in code generation, vulnerability detection, automated repair, privacy protection, and security evaluation, focusing on capability boundaries, data leakage risks, and model safety alignment.
+    \item Summarized applications of code LLMs in software R\&D workflows, including requirement understanding, code completion, test generation, defect localization, security auditing, and semantic code retrieval.
+\end{itemize}
+}
+}
+
+\CN{
+\customcventry{07/2023 -- 07/2024}
+{{\color{blue}{鱼快创领智能科技有限公司}}}
+{Java开发工程师}
+{辽宁，中国}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item 负责商用车联网平台多个核心模块开发，覆盖主动安全报警、车辆轨迹、实时视频监控、历史视频回放、用户成长体系、司机/车辆/订单/运单管理等业务场景。
+\end{itemize}
+}
+}
+\EN{
+\customcventry{07/2023 -- 07/2024}
+{{\color{blue}{YuKuai Chuangling Intelligent Technology Co., Ltd.}}}
+{Java Development Engineer}
+{Liaoning, China}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item Developed core modules for a commercial vehicle telematics platform, covering proactive safety alerting, vehicle trajectory, real-time video monitoring, historical video playback, user growth systems, and driver/vehicle/order/waybill management.
+\end{itemize}
+}
+}
+
+% 项目经历
+\CN{\section{项目经历}}
+\EN{\section{Project Experience}}
+
+\CN{
+\customcventry{}
+{{\color{blue}{美团}}}
+{VSOC 无人车信息安全态势感知平台}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item \textbf{项目背景：} 2800+ 辆无人驾驶车队的安全运营平台设计与开发，覆盖安全资产感知、安全能力检测、行为/基线风险监控、统一风险处置及合规支撑六大模块。
+    \item 独立设计整体架构，涵盖通信协议、数据网关、前后端接口等全链路环节。设计并开发 MQTT/SSL 车端网关，实现车辆心跳、状态及 TLS 证书的定时上报与事件触发上报，内置消息去重、VIN 一致性校验与误报兜底机制。
+    \item 设计 TLS 证书过期监控模块，支持远程握手与文件解析双模式检测、多级阈值告警及自动去重推送。
+    \item 封装大象 IM 通知系统，支持卡片消息与 Markdown 文本双通道推送，发送失败自动降级，作为证书监控与入侵检测两大子系统的统一通知基础设施。
+    \item 搭建数据聚合管道，将 Rust 采集服务的原始遥测数据按定时任务自动转为业务索引，打通从车辆 Agent 到仪表盘前端的完整链路。
+    \item 封装 ES 多节点连接池，支持注册中心动态发现、轮询负载均衡与指数退避重试。
+\end{itemize}
+}
+}
+
+\EN{
+\customcventry{}
+{{\color{blue}{Meituan}}}
+{VSOC Autonomous Vehicle Security Operations Center}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item \textbf{Background:} Designed and developed a security operations platform for a fleet of 2,800+ autonomous vehicles, spanning six modules: asset awareness, capability detection, behavior/baseline risk monitoring, unified risk disposition, and compliance support.
+    \item Independently architected the overall system covering communication protocols, data gateways, and frontend-backend interfaces across the full stack. Designed and built an MQTT/SSL gateway supporting scheduled and event-triggered reporting of vehicle heartbeat, status, and TLS certificates, with built-in message deduplication, VIN consistency validation, and error fallback.
+    \item Designed a TLS certificate expiry monitoring module with dual-mode detection (remote handshake and file parsing), multi-level threshold alerting, and automatic deduplicated push notifications.
+    \item Built a unified Daxiang IM notification system with dual-channel delivery (card messages and Markdown text), featuring automatic fallback on delivery failure, serving as the shared notification infrastructure for both the certificate monitoring and intrusion detection subsystems.
+    \item Built a data aggregation pipeline that transforms raw telemetry data from the Rust collection service into business indices via scheduled tasks, completing the end-to-end data flow from vehicle agents to the dashboard frontend.
+    \item Implemented a multi-node ES connection pool with registry-based service discovery, round-robin load balancing, and exponential backoff retry.
+\end{itemize}
+}
+}
+
+\CN{
+\customcventry{}
+{{\color{blue}{个人项目}}}
+{LLM Agent 安全围栏原型验证项目}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item 面向大模型 Agent 工具调用链路中的提示注入、工具投毒和敏感信息泄露等安全风险，设计输入、工具调用、输出三层纵深防御架构，支持 YAML 配置驱动与 strict mode 双模式。
+    \item 输入层采用正则规则、embedding 语义相似度、LLM Judge 三级级联检测；工具层实现文件、Shell、网络、SQL、MCP 五个专用检查器及循环攻击运行时检测；输出层集成敏感信息脱敏与 System Prompt 泄露检测。
+    \item 通过 Protocol 接口保证检查器可插拔，提供 LangGraph 适配器嵌入现有 Agent 工作流。
+    \item 复现 MCP 工具投毒、Shadow Pipeline、Sleeper Attack 三种攻击场景进行端到端验证，在 InjecAgent 和 AgentDojo 数据集上完成基准测试，编写 67 个单元测试覆盖核心模块。
+\end{itemize}
+}
+}
+
+\EN{
+\customcventry{}
+{{\color{blue}{Personal Project}}}
+{LLM Agent Guardrail Prototype Validation}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item Designed a three-layer defense-in-depth architecture---input, tool invocation, and output---to address prompt injection, tool poisoning, and sensitive information leakage risks in LLM agent workflows, with YAML configuration-driven and strict mode dual modes.
+    \item Input layer: cascaded detection combining regex rules, embedding-based semantic similarity, and LLM Judge. Tool layer: dedicated checkers for file, Shell, network, SQL, and MCP tool descriptions, plus runtime cyclic attack detection. Output layer: sensitive information masking and System Prompt leakage detection.
+    \item Ensured pluggability via Protocol interface abstraction and provided a LangGraph adapter for embedding into existing agent workflows.
+    \item Reproduced MCP tool poisoning, Shadow Pipeline, and Sleeper Attack scenarios for end-to-end validation. Completed benchmark testing on InjecAgent and AgentDojo datasets, with 67 unit tests covering core modules.
+\end{itemize}
+}
+}
+
+\CN{
+\customcventry{}
+{{\color{blue}{华为新加坡研究所}}}
+{AI智能体安全围栏与异常行为检测系统}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item \textbf{项目背景：} 面向鸿蒙端侧AI智能体在任务执行过程中的安全风险，构建运行时安全围栏，对系统API调用、权限访问、工具调用、文件读写和网络请求进行持续监控，识别越权访问、异常链路和隐私泄露风险。
+    \item 设计基于 session 和 trace 的行为采集思路，将一次智能体任务执行过程抽象为连续事件链路，采集事件类型、权限类型、资源敏感等级、调用结果、时间戳、外部网络访问标识、脱敏后的参数类型等元数据，避免直接存储用户隐私原文。
+    \item 构建面向安全检测的多维特征体系，包括基础统计特征、权限敏感度特征、意图-行为匹配特征、API 调用序列特征和时间窗口特征。例如统计敏感权限访问比例、异常 API 组合数量、读取敏感资源后短时间内是否发生外部 POST 请求等。
+    \item \textbf{使用 C++ 实现事件解析、增量特征更新和策略执行逻辑}，在端侧资源受限环境下减少全量日志扫描和复杂模型推理开销，提高检测链路实时性。
+\end{itemize}
+}
+}
+\EN{
+\customcventry{}
+{{\color{blue}{Huawei Singapore Research Institute}}}
+{AI Agent Guardrail and Anomaly Behavior Detection System}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item \textbf{Background:} Built a runtime security guardrail for on-device AI agents on HarmonyOS to continuously monitor system API calls, permission access, tool invocations, file I/O, and network requests, detecting unauthorized access, abnormal chains, and privacy leakage risks.
+    \item Designed a session- and trace-based behavior collection mechanism, modeling each agent task as an event chain and collecting metadata such as event type, permission type, resource sensitivity, call result, timestamp, external network flag, and desensitized parameter types.
+    \item Built multi-dimensional features for security detection, including statistical features, permission sensitivity, intent-behavior matching, API sequence features, and time-window features such as sensitive permission ratio and external POST behavior shortly after sensitive resource access.
+    \item \textbf{Implemented C++ modules for event parsing, incremental feature updates, and policy enforcement}, reducing full-log scanning and heavy model inference costs under on-device constraints.
+\end{itemize}
+}
+}
+
+\CN{
+\customcventry{}
+{{\color{blue}{鱼快创领智能科技有限公司}}}
+{车联网车队管理与行车记录仪运营平台}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item \textbf{项目背景：} 面向商用车联网业务，平台覆盖车辆管理、司机管理、订单运单、主动安全报警、实时视频监控、历史视频回放和轨迹分析等场景，为车队运营、安全驾驶和车辆问题分析提供数据支撑。
+    \item 负责车辆基础信息、设备状态、报警事件、轨迹点、视频记录、订单运单等多源数据的接入与服务化处理，支撑B端车队管理与C端车辆服务场景。
+    \item 基于Canal监听MySQL业务数据变更，结合Kafka进行消息分发，并将高频轨迹与设备数据写入TDengine，支持实时轨迹打点、历史轨迹查询与主动安全报警回溯。
+    \item 围绕主动安全报警、设备状态异常、车辆轨迹缺失、视频回放失败等业务问题，参与后端数据查询、接口联调与异常定位，提升运营平台的问题排查效率。
+    \item 使用CompletableFuture对多外部接口调用场景进行异步化改造，降低串行调用带来的响应延迟，提升高并发数据聚合接口的吞吐能力。
+\end{itemize}
+}
+}
+\EN{
+\customcventry{}
+{{\color{blue}{YuKuai Chuangling Intelligent Technology Co., Ltd.}}}
+{Fleet Management \& Dashcam Operations Platform for Connected Vehicles}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item \textbf{Background:} Built data-driven capabilities for commercial vehicle telematics, covering vehicle management, driver management, order/waybill management, proactive safety alerts, real-time video monitoring, historical playback, and trajectory analysis.
+    \item Participated in the integration and service-oriented processing of multi-source data such as vehicle master data, device status, alert events, trajectory points, video records, orders, and waybills.
+    \item Used Canal to monitor MySQL business data changes, Kafka for message distribution, and TDengine for high-frequency trajectory and device data storage, supporting real-time trajectory plotting, historical trajectory queries, and proactive safety alert backtracking.
+    \item Supported backend query development, interface integration, and anomaly localization for business issues such as safety alerts, abnormal device status, missing trajectory data, and video playback failures.
+    \item Refactored multiple external API calls using CompletableFuture, reducing serial-call latency and improving throughput for high-concurrency data aggregation interfaces.
+\end{itemize}
+}
+}
+
+\CN{
+\customcventry{}
+{{\color{blue}{鱼快创领智能科技有限公司}}}
+{解放行App用户成长与车辆服务模块}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item 负责数据技术驱动的场景化应用平台建设，支持车辆保养、运输优化、安全驾驶等二十余项业务场景。
+    \item 开发用户成长体系，围绕用户行为、积分规则、任务达成和权益激励等数据设计核心业务逻辑。
+    \item 设计并实现多车型保养周期智能提醒功能，基于车型、里程、时间周期等业务规则生成保养提醒，提高车辆服务响应能力。
+\end{itemize}
+}
+}
+\EN{
+\customcventry{}
+{{\color{blue}{YuKuai Chuangling Intelligent Technology Co., Ltd.}}}
+{Jiefangxing App User Growth and Vehicle Service Module}
+{}
+{}
+{
+\begin{itemize}[leftmargin=0.6cm, label={\textbullet}]
+    \item Participated in building a data-driven scenario-based application platform supporting over 20 business scenarios, including vehicle maintenance, transportation optimization, and safe driving.
+    \item Independently developed the user growth system, designing core business logic around user behavior, points rules, task completion, and benefit incentives.
+    \item Designed and implemented intelligent maintenance cycle reminders for multiple vehicle models based on vehicle type, mileage, and time-period rules, improving vehicle service responsiveness.
+\end{itemize}
+}
+}
+
+% 专业技能
+\CN{\section{专业技能}}
+\EN{\section{Skills}}
+
+\begin{itemize}[label=\textbullet]
+\item {
+    \CN{\textbf{编程语言：} Java, C/C++, Python, Go, PHP, Rust}
+    \EN{\textbf{Programming Languages:} Java, C/C++, Python, Go, PHP, Rust}
+}
+
+\item {
+    \CN{\textbf{后端框架与中间件：} Spring Boot, Spring Cloud, Gin, MQTT/SSL, WebSocket, MySQL, Kafka, Canal, TDengine, Elasticsearch, Docker, 微服务架构}
+    \EN{\textbf{Backend Frameworks \& Middleware:} Spring Boot, Spring Cloud, Gin, MQTT/SSL, WebSocket, MySQL, Kafka, Canal, TDengine, Elasticsearch, Docker, microservice architecture}
+}
+
+\item {
+    \CN{\textbf{AI 与安全：} LLM Agent 安全, 提示注入检测, MCP 协议, LangGraph, Pydantic, sentence-transformers, sqlparse, 端侧安全围栏, 入侵检测, 车联网安全}
+    \EN{\textbf{AI \& Security:} LLM Agent Security, Prompt Injection Detection, MCP Protocol, LangGraph, Pydantic, sentence-transformers, sqlparse, On-device Guardrails, Intrusion Detection, Vehicle Cybersecurity}
+}
+
+\item {
+    \CN{\textbf{工具与工程化：} Git, Linux, pytest, 正则引擎, 特征工程, 数据采集与处理链路}
+    \EN{\textbf{Tools \& Engineering:} Git, Linux, pytest, Regex Engine, Feature Engineering, Data Collection \& Processing Pipeline}
+}
+
+\end{itemize}
+
+% 语言
+\CN{
+\section{语言}
+\begin{multicols}{2}
+    \begin{itemize}[label=\textbullet]
+    \item \textbf{英文} [雅思6.5]
+    \end{itemize}
+\end{multicols}
+}
+\EN{
+\section{Languages}
+\begin{multicols}{2}
+    \begin{itemize}[label=\textbullet]
+    \item \textbf{Mandarin Chinese} [Native]
+    \item \textbf{English} [IELTS 6.5]
+    \end{itemize}
+\end{multicols}
+}
+
+\end{document}

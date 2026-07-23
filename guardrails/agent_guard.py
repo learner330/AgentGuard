@@ -128,7 +128,10 @@ class AgentGuard:
         input_cfg = config.get("input_guard", {})
         input_guard = InputGuard(
             enabled=input_cfg.get("enabled", True),
-            custom_patterns=input_cfg.get("custom_patterns"),
+            semantic_check=input_cfg.get("semantic_check", False),
+            semantic_threshold=input_cfg.get("semantic_threshold", 0.72),
+            llm_judge=input_cfg.get("llm_judge", False),
+            llm_judge_threshold=input_cfg.get("llm_judge_threshold", "medium"),
         )
 
         # 工具围栏

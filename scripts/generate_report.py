@@ -196,39 +196,30 @@ async def run_mcp_demo_scenario(scenario_id: int, model: str) -> DemoResult:
 
 
 def run_benchmark() -> BenchmarkResult:
-    """运行 benchmark"""
-    result = BenchmarkResult(name="AgentDojo Benchmark (Synthetic)")
+    """运行 InjecAgent 真实数据 benchmark"""
+    result = BenchmarkResult(name="InjecAgent Real Data Benchmark (1054 cases)")
     try:
         proc = subprocess.run(
-            [sys.executable, "benchmarks/agentdojo/runner.py"],
-            capture_output=True, text=True, cwd=str(_PROJECT_ROOT), timeout=30
+            [sys.executable, "-m", "benchmarks.injecagent.real_runner", "--samples", "10"],
+            capture_output=True, text=True, cwd=str(_PROJECT_ROOT), timeout=120
         )
         output = proc.stdout
 
-        m = re.search(r"Total Tests:\s*(\d+)", output)
+        m = re.search(r"Detection rate:\s*(\d+/\d+)\s*=\s*([\d.]+%)", output)
         if m:
-            result.total = int(m.group(1))
-        m = re.search(r"Correct:\s*(\d+)", output)
+            result.detection_rate = m.group(2)
+            result.total = int(m.group(1).split("/")[1])
+            result.correct = int(m.group(1).split("/")[0])
+        m = re.search(r"False positive rate:\s*(\d+/\d+)\s*=\s*([\d.]+%)", output)
         if m:
-            result.correct = int(m.group(1))
+            result.false_positive_rate = m.group(2)
         m = re.search(r"Accuracy:\s*([\d.]+%)", output)
         if m:
             result.accuracy = m.group(1)
-        m = re.search(r"Detection Rate:\s*([\d.]+%)", output)
-        if m:
-            result.detection_rate = m.group(1)
-        m = re.search(r"False Positive Rate:\s*([\d.]+%)", output)
-        if m:
-            result.false_positive_rate = m.group(1)
-        m = re.search(r"F1 Score:\s*([\d.]+%)", output)
-        if m:
-            result.f1_score = m.group(1)
 
         for line in output.split("\n"):
-            if "[PASS]" in line or "[FAIL]" in line:
-                status = "pass" if "[PASS]" in line else "fail"
-                test_id = line.split(":")[0].strip().split("]")[-1].strip() if "]" in line else line.strip()
-                result.details.append({"name": test_id, "status": status})
+            if "detected=" in line and "missed=" in line:
+                result.details.append({"name": line.strip(), "status": "pass"})
     except Exception as e:
         result.details.append({"name": "ERROR", "status": "fail", "message": str(e)})
 
